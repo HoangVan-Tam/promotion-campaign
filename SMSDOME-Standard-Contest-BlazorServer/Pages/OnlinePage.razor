@@ -1,0 +1,219 @@
+﻿@page "/onlinepage"
+@layout ClientLayout
+
+@using Entities.DTO
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using SMSDOME_Standard_Contest_BlazorServer.Helpers
+@using Services.Interface
+@using SMSDOME_Standard_Contest_BlazorServer.Pages.Component
+@using Entities.Constants
+
+@inject NavigationManager _navigationManager
+@inject IContestFieldDetailsService _contestColumnDetailService
+@inject IEntriesService _entriesSerivce
+@inject IUtilityService _utilityService
+@inject ProtectedSessionStorage _browserStorage
+
+
+@if (formModel != null)
+{
+    <div class="container mt-5">
+    <div class="card shadow p-4">
+        <div class="mb-3">
+            <h2 class="text-center mb-5">Online Page</h2>
+            <p>
+                To participate, please fill up the form below with your details.
+
+            </p>
+            <p style="color: red;">
+                * Required
+            </p>
+        </div>
+
+        <EditForm EditContext="@editContext" OnValidSubmit="@Submit" OnInvalidSubmit="@HandleInvalidSubmit">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+            @foreach (var p in formModel.GetType().GetProperties())
+                {
+                    <div class="mb-3">
+                        <label class="form-label">
+                            @p.GetCustomAttributesData()[0].ConstructorArguments[0].Value
+
+                        </label>
+                        @switch (p.PropertyType.FullName)
+                        {
+                            case "System.String":
+                                if (p.Name != "FileLink")
+                                {
+                                    <input disabled="@(p.Name.Contains("ReceiptNumber") && isOnlineCompletion)" type="text"
+                                        class="form-control" value="@p.GetValue(formModel)"
+                                        @onchange="(e) => _utilityService.SetValue(e, p, formModel)">
+                                }
+                                else
+                                {
+                                    <InputFile class="form-control" OnChange="HandleFileSelected" />
+                                }
+                                break;
+                            case "Sytem.Int":
+                                break;
+                            case "":
+                                break;
+                        }
+                    </div>
+                }
+                <button type="submit" class="btn btn-primary mt-3">Submit</button>
+            </EditForm>
+        </div>
+    </div>
+
+    <Modal @ref="modalRef" ModalId="customModal" Title="Custom Modal Title" OnOkClick="OkClicked"
+        ShowSuccessButton="@isSuccess">
+        <BodyContent>
+            <h3>@message</h3>
+        </BodyContent>
+    </Modal>
+}
+
+@code {
+    private EditContext editContext;
+    private Modal modalRef;
+    CustomClassBuilder CCB;
+
+    private bool isOnlineCompletion = false;
+    private bool isSuccess = false;
+    private string message;
+    private List<string> errorMessages = new List<string>();
+    private string contestCode = "";
+    object formModel = null;
+    private string? verificationCode;
+    private IBrowserFile receiptImageFile = null;
+
+    protected override void OnParametersSet()
+    {
+        var uri = new Uri(_navigationManager.Uri);
+        var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        verificationCode = queryParams.Get("i");
+        if (!string.IsNullOrEmpty(verificationCode))
+        {
+            isOnlineCompletion = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var protectedBrowser = await _browserStorage.GetAsync<string>("contestUniqueCode");
+            contestCode = protectedBrowser.Value;
+            CCB = new CustomClassBuilder(contestCode);
+            List<string> lstColumnName = new List<string>();
+            List<bool> lstIsRequired = new List<bool>();
+            List<Type> lstColumnType = new List<Type>();
+            List<string> lstColumnLabel = new List<string>();
+            List<string> lstRegexPatterns = new List<string>();
+
+            var formFields = new List<FormField>();
+            if (!isOnlineCompletion)
+            {
+                var contestConfigResponse = await _contestColumnDetailService.GetAllFieldsOfTheContestForFormAsync(contestCode,
+                GlobalConstants.TypeSubmitForm.OnlinePage);
+                formFields = contestConfigResponse.Data;
+            }
+            else
+            {
+
+                var contestConfigResponse = await _contestColumnDetailService.GetAllFieldsOfTheContestForFormAsync(contestCode,
+                GlobalConstants.TypeSubmitForm.OnlineCompletionPage);
+                formFields = contestConfigResponse.Data;
+            }
+            foreach (FormField item in formFields)
+            {
+                lstColumnLabel.Add(item.FieldLabel);
+                lstColumnName.Add(item.FieldName);
+                lstColumnType.Add(_utilityService.GetType(item.FieldType));
+                lstIsRequired.Add(item.IsRequired);
+                lstRegexPatterns.Add(item.Pattern);
+            }
+            formModel = CCB.CreateObject(lstColumnName.ToArray(), lstColumnType.ToArray(), lstIsRequired.ToArray(),
+            lstColumnLabel.ToArray(), lstRegexPatterns.ToArray());
+
+            if (isOnlineCompletion)
+            {
+                var receiptNoProp = formModel.GetType().GetProperties().Where(p => p.Name.ToLower() ==
+                "ReceiptNumber".ToLower()).FirstOrDefault();
+                var entry = await _entriesSerivce.GetEntryByVerificationCode(contestCode, verificationCode);
+                receiptNoProp.SetValue(formModel, entry.Data["ReceiptNumber"]);
+            }
+            editContext = new EditContext(formModel);
+            editContext.OnValidationStateChanged += async (sender, args) =>
+            {
+                var error = editContext.GetValidationMessages().FirstOrDefault();
+                if (error != null)
+                {
+                    message = error;
+                    await modalRef.Show();
+                }
+            };
+            StateHasChanged();
+        }
+
+    }
+
+    private void HandleInvalidSubmit()
+    {
+
+    }
+
+    private async void Submit()
+    {
+        var props = _utilityService.ToDictionary<object>(formModel);
+        var res = new FunctionResults<string>();
+        if (isOnlineCompletion)
+        {
+            res = await _entriesSerivce.CompleteEntry(contestCode, verificationCode, props, receiptImageFile);
+        }
+        else
+        {
+            res = await _entriesSerivce.InsertEntry(contestCode, props, receiptImageFile);
+
+        }
+
+        if (res.IsSuccess)
+        {
+            isSuccess = true;
+            message = res.Message;
+        }
+        else
+        {
+            message = res.Message;
+        }
+        await modalRef.Show();
+        StateHasChanged();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var fileLinkProp = formModel.GetType().GetProperties().Where(p => p.Name.ToLower() ==
+        "FileLink".ToLower()).FirstOrDefault();
+        if (e.File != null)
+        {
+            receiptImageFile = e.File;
+            if (fileLinkProp != null)
+            {
+                fileLinkProp.SetValue(formModel, e.File.Name);
+            }
+        }
+        else
+        {
+            if (fileLinkProp != null)
+            {
+                fileLinkProp.SetValue(formModel, "");
+            }
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task OkClicked()
+    {
+        await modalRef.Hide();
+    }
+}

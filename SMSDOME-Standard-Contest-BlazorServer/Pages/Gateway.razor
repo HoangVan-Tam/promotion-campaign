@@ -1,0 +1,49 @@
+﻿@page "/gateway/{contestUniqueCode}"
+@layout ClientLayout
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Services.Interface
+
+@inject NavigationManager _navigationManager
+@inject ProtectedSessionStorage _browserStorage
+@inject IContestService _contestService
+
+@code {
+    [Parameter]
+    public string ContestUniqueCode { get; set; }
+    private string? verificationCode;
+
+    protected override void OnParametersSet()
+    {
+        var uri = new Uri(_navigationManager.Uri);
+        var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        verificationCode = queryParams.Get("i");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ContestUniqueCode != null)
+        {
+            await _browserStorage.SetAsync("contestUniqueCode", ContestUniqueCode);
+
+            var response = await _contestService.CheckDoesContestExist(contestUniqueCode: ContestUniqueCode);
+            if ((bool)response.Data)
+            {
+                if (!string.IsNullOrEmpty(verificationCode)){
+                    _navigationManager.NavigateTo("onlinepage?i=" + verificationCode);
+                }
+                else{
+                    _navigationManager.NavigateTo("onlinepage");
+                }
+            }
+            else
+            {
+                _navigationManager.NavigateTo("error");
+            }
+        }
+        else
+        {
+            _navigationManager.NavigateTo("error");
+        }
+    }
+}

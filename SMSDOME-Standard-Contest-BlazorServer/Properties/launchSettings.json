@@ -1,0 +1,38 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:19787",
+      "sslPort": 44328
+    }
+  },
+  "profiles": {
+    "SMSDOME-Standard-Contest-BlazorServer": {
+      "commandName": "Project",
+      "commandLineArgs": "Watch run",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7087;http://localhost:5087",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "hotReloadEnabled": true,
+      "requireExactSource": "false"
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Watch": {
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "commandLineArgs": "watch run debug --launch-profile SMSDOME-Standard-Contest-BlazorServer",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {}
+    }
+  }
+}

@@ -1,0 +1,42 @@
+﻿@using System.Globalization
+@inject IJSRuntime _js
+
+<input id="@Id" class="form-control"  @bind="SelectedDateString" />
+
+@code {
+    [Parameter] public string Id { get; set; } = $"datepicker-{Guid.NewGuid()}";
+    [Parameter] public string SelectedDate { get; set; }
+    [Parameter] public EventCallback<string> SelectedDateChanged { get; set; }
+    [Parameter] public bool TimePicker { get; set; } = true;
+
+    private string SelectedDateString
+    {
+        get => SelectedDate;
+        set
+        {
+            SelectedDate = value;
+            SelectedDateChanged.InvokeAsync(value);
+        }
+    }
+    private DotNetObjectReference<DateInput> _objectReference;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _objectReference = DotNetObjectReference.Create(this);
+            if(TimePicker){
+                await _js.InvokeVoidAsync("JQueryFunctions.initDateTimePicker", Id, _objectReference);
+            }
+            else{
+                await _js.InvokeVoidAsync("JQueryFunctions.initDatePicker", Id, _objectReference);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public Task UpdateDate(string date)
+    {
+        SelectedDateString = date.ToString();
+        return SelectedDateChanged.InvokeAsync(SelectedDate);
+    }
+}

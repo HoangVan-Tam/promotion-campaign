@@ -1,0 +1,49 @@
+﻿@using Entities.Component
+@typeparam T
+
+
+<div class='wrapper @(Active ? "active": "")'>
+    <div class='form-control select-btn position-relative'>
+        <div class="position-absolute top-0 start-0 h-100 w-100 z-1" @onclick="@(()=>{Active = !Active;})"></div>
+        <div class="w-100 row gx-2 me-2">
+            @if (SelectedItems.Count() > 0)
+            {
+                foreach (var item in SelectedItems)
+                {
+                    <div style="width: fit-content; z-index: 10">
+                        <p class="selected-item-text">
+                            <span>
+                                @DataSource.Where(p=>p.Id == item.Id).FirstOrDefault()?.Text
+                            </span>
+                            <span @onclick="@(e => OnClickedItem(item))"><i class="bi bi-x"></i></span>
+                        </p>
+                    </div>
+                }
+            }
+            else
+            {
+                <span>- Select @Label -</span>
+            }
+        </div>
+        <i class="bi bi-chevron-down"></i>
+    </div>
+    <div class='content-dropdownlist @(Active ? "d-block": "d-none")'>
+        <div class="search">
+            <i class="bi bi-search"></i>
+            <input spellcheck="false" type="text" placeholder="Search" class="form-control" value="@Search"
+                @oninput="SearchChanged">
+        </div>
+        <ul class="options">
+            @foreach (var item in SearchDataSource)
+            {
+                <li @onclick="@(e => OnClickedItem(item))"
+                    class="@(SelectedItems.Where(p=>p.Id == item.Id).FirstOrDefault() != null ? "selected" : "")">
+                    @item.Text
+                </li>
+            }
+        </ul>
+        <p style='margin-top: 10px; @(SearchDataSource.Count() == 0 ? "": "display: none")'>
+            Oops! @Label not found
+        </p>
+    </div>
+</div>
