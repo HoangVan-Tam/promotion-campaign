@@ -11,8 +11,8 @@ namespace Entities.DTO
         public string ContestUniqueCode;
         public int PageNumber;
         public int PageSize;
-        public string StartDate;
-        public string EndDate;
+        public DateTime StartDate;
+        public DateTime EndDate;
         public string EntryValidity;
     }
 }

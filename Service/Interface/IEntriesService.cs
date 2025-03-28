@@ -14,7 +14,7 @@ namespace Services.Interface
     {
         Task<FunctionResults<Dictionary<string, object>>> GetEntryByVerificationCode(string ContestUniqueCode, string verificationCode);
         Task<FunctionResults<string>> InsertEntry(string contestUniqueCode, Dictionary<string, object> props, IBrowserFile file);
-        Task<FunctionResults<List<Dictionary<string, object>>>> GetAllEntriesAsync(string ContestUniqueCode, Option option);
+        Task<FunctionResults<List<Dictionary<string, object>>>> GetAllEntriesAsync(Option option);
         Task<FunctionResults<string>> PurgeSelectedEntriesAsync(string ContestEntriesTableName, List<int> entriesID);
         Task<FunctionResults<string>> PurgeAllEntriesAsync(string ContestEntriesTableName);
         Task<FunctionResults<byte[]>> GetEntriesCSV(string ContestUniqueCode);

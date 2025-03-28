@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Entities.Constants;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -19,11 +20,11 @@ namespace Entities.DTO
         [Required]
         public DateTime TestDate { get; set; } = new DateTime(DateTime.Now.Year, 1, 1);
         [Required]
-        public DateTime StartDate { get; set; } = DateTime.UtcNow;
+        public DateTime StartDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 00, 00, 00);
         [Required]
-        public DateTime EndDate { get; set; } = DateTime.UtcNow;
+        public DateTime EndDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23,59,59);
         [Required]
-        public DateTime TerminationDate { get; set; } = DateTime.UtcNow;
+        public DateTime TerminationDate { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59);
         [Required]
         public int AppId { get; set; }
         [Required]
@@ -57,8 +58,8 @@ namespace Entities.DTO
         public string ValidOnlineCompletionResponse { get; set; }
 
         public string MissingFieldResponse { get; set; }
-        public string EntryExclusionFields { get; set; } = "Response,NRIC_NoPrefix,VerificationCode,Chances,NRIC,EntryText,DateVerified,DateRejected,DateResent,IsRejected,IsVerified";
-        public string WinnerExclusionFields { get; set; } = "Response,NRIC_NoPrefix,VerificationCode,Chances,EntrySource,NRIC,IsValid,IsRejected,DateVerified,DateRejected,DateResent,IsVerified,Reason,EntryText";
+        public string EntryExclusionFields { get; set; } = "IsValid,Response,NRIC_NoPrefix,VerificationCode,Chances,NRIC,EntryText,DateVerified,DateRejected,DateResent,IsRejected,IsVerified";
+        public string WinnerExclusionFields { get; set; } = "IsValid,Response,NRIC_NoPrefix,VerificationCode,Chances,EntrySource,NRIC,IsValid,IsRejected,DateVerified,DateRejected,DateResent,IsVerified,Reason,EntryText";
         public string? ErrorMessageAmount { get; set; } = "";
         public string RepeatValidation { get; set; } = "";
         public decimal Amount { get; set; } = 0;

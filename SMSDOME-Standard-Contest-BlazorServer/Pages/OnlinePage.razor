@@ -3,7 +3,7 @@
 
 @using Entities.DTO
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@using SMSDOME_Standard_Contest_BlazorServer.Helpers
+@using Services.Helpers
 @using Services.Interface
 @using SMSDOME_Standard_Contest_BlazorServer.Pages.Component
 @using Entities.Constants
@@ -129,7 +129,7 @@
             {
                 lstColumnLabel.Add(item.FieldLabel);
                 lstColumnName.Add(item.FieldName);
-                lstColumnType.Add(_utilityService.GetType(item.FieldType));
+                lstColumnType.Add(Common.GetType(item.FieldType));
                 lstIsRequired.Add(item.IsRequired);
                 lstRegexPatterns.Add(item.Pattern);
             }
@@ -165,7 +165,7 @@
 
     private async void Submit()
     {
-        var props = _utilityService.ToDictionary<object>(formModel);
+        var props = formModel.ToDictionary();
         var res = new FunctionResults<string>();
         if (isOnlineCompletion)
         {

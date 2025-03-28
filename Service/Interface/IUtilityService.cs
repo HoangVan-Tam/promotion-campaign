@@ -15,8 +15,6 @@ namespace Services.Interface
         void SetValue(Microsoft.AspNetCore.Components.ChangeEventArgs e, PropertyInfo propertyInfo, object o);
         byte[] ExportToCsv(List<Dictionary<string, object>> data);
         Task<string> UploadFileAsync(IBrowserFile file, string receiptNo);
-        Dictionary<string, TValue> ToDictionary<TValue>(object obj);
-        Type GetType(string type);
         string NormalizeSpaces(string value);
         string CleanMessage(Parameters param, string keyword);
         Task<string> SendSms(Contest contest, string receivers, string content);

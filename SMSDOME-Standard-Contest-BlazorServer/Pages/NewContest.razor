@@ -50,19 +50,19 @@
         <div class="mb-3 row">
             <div class="col-3">
                 <label for="testDate" class="form-label">Test Date</label>
-                <input class="form-control" id="testDate" />
+                <DateInput Id="testDate" @bind-Value="newContest.TestDate" />
             </div>
             <div class="col-3">
                 <label for="startDate" class="form-label">Start Date</label>
-                <InputDate class="form-control" id="startDate" @bind-Value="newContest.StartDate" />
+                <DateInput Id="startDate" @bind-Value="newContest.StartDate" />
             </div>
             <div class="col-3">
                 <label for="endDate" class="form-label">End Date</label>
-                <InputDate class="form-control" id="endDate" @bind-Value="newContest.EndDate" />
+                <DateInput Id="endDate" @bind-Value="newContest.EndDate" />
             </div>
             <div class="col-3">
                 <label for="terminationDate" class="form-label">Termination Date</label>
-                <InputDate class="form-control" id="terminationDate" @bind-Value="newContest.TerminationDate" />
+                <DateInput Id="terminationDate" @bind-Value="newContest.TerminationDate" />
             </div>
         </div>
         <div class="mb-3">
@@ -118,9 +118,9 @@
                         <td style="min-width: 320px">
                             <InputText class="form-control" @bind-Value="item.FieldLabel" />
                         </td>
-                        <td style="min-width: 250px">
+                        @* <td style="min-width: 250px">
                             <DropDownList DataSource="@GlobalConstants.DROPDOWNLIST_FIELDTYPE"></DropDownList>
-                        </td>
+                        </td> *@
                         <td>
                             <InputCheckbox @bind-Value="item.ShowOnlinePage"></InputCheckbox>
                         </td>
@@ -291,14 +291,6 @@
         var regexValidationServiceResponse = await _regexValidationService.LoadAllRegexAsync();
         regexValidations = regexValidationServiceResponse.Data;
         InitDataForFieldsForNewContest();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await _js.InvokeVoidAsync("JQueryFunctions.initDateTimePicker", "#testDate");
-        }
     }
 
     private async Task CreateNewContest()

@@ -37,7 +37,8 @@ window.JQueryFunctions = {
             format: 'd M Y H:i:s',
             onChangeDateTime: function (dateText) {
                 dotnetHelper.invokeMethodAsync("UpdateDate", dateText)
-            }
+            },
+            defaultTime: '00:00:00'
         });
     },
 
@@ -49,7 +50,6 @@ window.JQueryFunctions = {
                 dotnetHelper.invokeMethodAsync("UpdateDate", dateText)
             },
             timepicker: false,
-            defaultTime: '00:00:00' 
         });
     }
 };

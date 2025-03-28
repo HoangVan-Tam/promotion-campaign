@@ -76,12 +76,15 @@ namespace Entities.Constants
             "GO";
 
 
-        public const string DBSCRIPT_GET_ALL_ENTRIES = "SELECT * FROM [dbo].[BC_230101_KEYWORD] ORDER BY [EntryID] OFFSET @SkipRow row FETCH NEXT @TakeRow ROWS ONLY; ";
+        public const string DBSCRIPT_GET_ALL_ENTRIES = "SELECT * FROM [dbo].[BC_230101_KEYWORD] where DateEntry BETWEEN @StartDate AND @EndDate @IsValid ORDER BY [EntryID] OFFSET @SkipRow row FETCH NEXT @TakeRow ROWS ONLY; ";
         public const string DBSCRIPT_GET_ALL_ENTRIES_NOPAGING = "SELECT * FROM [dbo].[BC_230101_KEYWORD] ORDER BY [EntryID]; ";
 
         public const string DBSCRIPT_PURGE_SELECTED_ENTRIES = "DELETE FROM [dbo].[BC_230101_KEYWORD] WHERE EntryID IN ({entriesID})";
-
         public const string DBSCRIPT_PURGE_ALL_ENTRIES = "DELETE FROM [dbo].[BC_230101_KEYWORD]";
+
+        public const string DBSCRIPT_PICK_WINNERS = "SELECT Top (@NoOfWinners) * FROM [BC_230101_KEYWORD] E " +
+            "WHERE E.IsValid = 1 " +
+            "AND E.DateEntry BETWEEN @StartDate AND @EndDate ";
 
         public const string DBSCRIPT_SELECT_ENTRIES_BY_CONDITION = "SELECT * FROM @table where @condition";
         public const string DBSCRIPT_SELECT_COLUMN_METADATA = @"SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
@@ -91,5 +94,11 @@ namespace Entities.Constants
             WINNERS,
             LOG,
         }
+
+        public const string DBSCRIPT_PICK_WINNER_CONDITIONS_REQUIRED_FILELINK = "AND E.FileLink IS NOT NULL AND E.FileLink <> '' ";
+        public const string DBSCRIPT_PICK_WINNER_CONDITIONS_EXCLUDE_PAST_WINNERS = "AND NOT EXISTS (" +
+            "SELECT 1 FROM[BC_230101_KEYWORD_Winners] W WHERE W.EntryID = E.EntryID) " +
+            "AND NOT EXISTS (" +
+            "SELECT 1 FROM[BC_230101_KEYWORD_Winners] W WHERE W.MobileNo = E.MobileNumber);";
     }
 }

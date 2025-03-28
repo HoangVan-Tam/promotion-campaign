@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Polly;
+using Services.Helpers;
 using Services.Interface;
 using System;
 using System.Collections;
@@ -73,16 +74,16 @@ namespace Services.Implement
             return response;
         }
 
-        public async Task<FunctionResults<List<Dictionary<string, object>>>> GetAllEntriesAsync(string ContestUniqueCode, Option option)
+        public async Task<FunctionResults<List<Dictionary<string, object>>>> GetAllEntriesAsync(Option option)
         {
             await _unitOfWork.BeginEfTransactionAsync();
             FunctionResults<List<Dictionary<string, object>>> response = new FunctionResults<List<Dictionary<string, object>>>();         
             try
             {
-                var tableName = "BC_" + ContestUniqueCode;
-                var contest = await _unitOfWork.Contest.FindAsync(p => p.ContestUniqueCode == ContestUniqueCode);
+                var tableName = "BC_" + option.ContestUniqueCode;
+                var contest = await _unitOfWork.Contest.FindAsync(p => p.ContestUniqueCode == option.ContestUniqueCode);
                 var entryExclusionFields = contest.EntryExclusionFields.Split(",").ToList();
-                response.Data = await _unitOfWork.SQL.GetAllEntries(ContestUniqueCode, option, entryExclusionFields, _unitOfWork.CurrentEfTransaction);
+                response.Data = await _unitOfWork.SQL.GetAllEntries(tableName, option, entryExclusionFields, _unitOfWork.CurrentEfTransaction);
                 await _unitOfWork.CommitAsync();
             }
             catch (Exception ex)
@@ -92,7 +93,7 @@ namespace Services.Implement
                 response.Error = ex.Message;
             }
             return response;
-        }
+        }       
 
         public async Task<FunctionResults<string>> PurgeSelectedEntriesAsync(string ContestUniqueCode, List<int> entriesID)
         {
@@ -132,8 +133,9 @@ namespace Services.Implement
             return response;
         }
 
-        public async Task<FunctionResults<List<Dictionary<string, object>>>> PickWinnerAsync(string ContestUniqueCode, Option option)
+        public async Task<FunctionResults<List<Dictionary<string, object>>>> PickWinnerAsync(PickWinnerModel option)
         {
+            await _unitOfWork.BeginEfTransactionAsync();
             FunctionResults<List<Dictionary<string, object>>> response = new FunctionResults<List<Dictionary<string, object>>>();
             //await _sqlConnection.OpenAsync();
             //try
@@ -170,7 +172,7 @@ namespace Services.Implement
      .FindAsync(p => p.ContestUniqueCode.ToLower() == contestUniqueCode.ToLower());
 
                 // Retrieve table columns dynamically
-                var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync(contestUniqueCode, _unitOfWork.CurrentEfTransaction);
+                var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync("BC_" + contestUniqueCode, _unitOfWork.CurrentEfTransaction);
 
                 // Initialize default values
                 props["EntrySource"] = "WEB";
@@ -209,7 +211,7 @@ namespace Services.Implement
                 // Insert the entry into the database, excluding the "EntryID" column
                 if (Convert.ToBoolean(props["IsValid"]))
                 {
-                    await _unitOfWork.SQL.InsertEntriesAsync(contest, props, tableColumns.Where(p => p.ColumnName != "EntryID"), _unitOfWork.CurrentEfTransaction);
+                    await _unitOfWork.SQL.InsertEntriesAsync("BC_" + contestUniqueCode, contest, props, tableColumns.Where(p => p.ColumnName != "EntryID"), _unitOfWork.CurrentEfTransaction);
                 }
 
                 // Commit the transaction after successful insertion
@@ -243,7 +245,7 @@ namespace Services.Implement
                 searchConditions.Add(new ColumnMetadata() { ColumnName = "MobileNumber", DataType = "NvarChar" });
                 searchConditions.Add(new ColumnMetadata() { ColumnName = "VerificationCode", DataType = "NvarChar" });
                 var tableName = "BC_" + contestCode;
-                var existingEntries = await _unitOfWork.SQL.FindEntriesAsync(tableName, entrySearchParams, searchConditions, _unitOfWork.CurrentEfTransaction);
+                var existingEntries = await _unitOfWork.SQL.FindDataAsync(tableName, entrySearchParams, searchConditions, _unitOfWork.CurrentEfTransaction);
                 if (existingEntries.Count == 0)
                 {
                     result.Message = "Unable to find Entry.";
@@ -257,7 +259,7 @@ namespace Services.Implement
                         entryData["FileLink"] = await _utilityService.UploadFileAsync(file, entryData["ReceiptNumber"].ToString());
                     }
 
-                    var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync(contestCode, _unitOfWork.CurrentEfTransaction);
+                    var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync(tableName, _unitOfWork.CurrentEfTransaction);
                     tableColumns = tableColumns.Where(p => entryData.Keys.Contains(p.ColumnName)).ToList();
                     await _unitOfWork.SQL.UpdateEntriesAsync(tableName, verificationCode, tableColumns, entryData, _unitOfWork.CurrentEfTransaction);
                 }
@@ -341,7 +343,7 @@ namespace Services.Implement
 
             try
             {
-                var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync(body.ContestUniqueCode, _unitOfWork.CurrentEfTransaction);
+                var tableColumns = await _unitOfWork.SQL.GetTableColumnsAsync("BC_" + body.ContestUniqueCode, _unitOfWork.CurrentEfTransaction);
                 var cleanedMessage = _utilityService.CleanMessage(body, contest.Keyword);
 
                 // Validate contest entry timing
@@ -408,7 +410,7 @@ namespace Services.Implement
                 }
 
                 // Save entry into database
-                await _unitOfWork.SQL.InsertEntriesAsync(contest, props, tableColumns.Where(p => p.ColumnName != "EntryID"), _unitOfWork.CurrentEfTransaction);
+                await _unitOfWork.SQL.InsertEntriesAsync("BC_" + contest.ContestUniqueCode, contest, props, tableColumns.Where(p => p.ColumnName != "EntryID"), _unitOfWork.CurrentEfTransaction);
                 res.Data = props;
 
                 await _unitOfWork.CommitAsync();
@@ -432,7 +434,7 @@ namespace Services.Implement
                 uniqueProps.Add(item.FieldName, props[item.FieldName]);
             }
             var tableName = "BC_" + contestCode;
-            var entries = await _unitOfWork.SQL.FindEntriesAsync(tableName, uniqueProps, tableColumns, transaction);
+            var entries = await _unitOfWork.SQL.FindDataAsync(tableName, uniqueProps, tableColumns, transaction);
             if (entries.Count() > 0)
             {
                 return false;

@@ -37,21 +37,7 @@ namespace Services.Common
             _containerName = _appConfig.AzureBlobStorage.ContainerName;
             _blobServiceClient = new BlobServiceClient(blobConnectionString);
         }
-        public Type GetType(string type)
-        {
-            switch (type)
-            {
-                case "String":
-                    return typeof(string);
-                case "DateTime":
-                    return typeof(DateTime);
-                case "Int32":
-                    return typeof(int);
-                case "Decimal":
-                    return typeof(decimal);
-                default: return null;
-            }
-        }
+        
         public void SetValue(Microsoft.AspNetCore.Components.ChangeEventArgs e, PropertyInfo propertyInfo, object o)
         {
             var propertyType = propertyInfo.PropertyType;
@@ -78,12 +64,7 @@ namespace Services.Common
                     default: break;
                 }
             }
-        }
-        public Dictionary<string, TValue> ToDictionary<TValue>(object obj)
-        {
-            var json = JsonConvert.SerializeObject(obj);
-            return JsonConvert.DeserializeObject<Dictionary<string, TValue>>(json);
-        }
+        }       
 
         public string NormalizeSpaces(string value)
         {

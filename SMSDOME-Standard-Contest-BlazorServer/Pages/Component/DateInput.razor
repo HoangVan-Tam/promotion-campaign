@@ -1,24 +1,46 @@
 ﻿@using System.Globalization
+@using Entities.Constants
+@using Services.Interface
+
+@inject IToastService _toastService
 @inject IJSRuntime _js
 
-<input id="@Id" class="form-control"  @bind="SelectedDateString" />
+<input id="@Id" class="form-control"  @bind="Text" />
 
 @code {
     [Parameter] public string Id { get; set; } = $"datepicker-{Guid.NewGuid()}";
-    [Parameter] public string SelectedDate { get; set; }
-    [Parameter] public EventCallback<string> SelectedDateChanged { get; set; }
-    [Parameter] public bool TimePicker { get; set; } = true;
-
-    private string SelectedDateString
+    [Parameter] public EventCallback<DateTime> ValueChanged { get; set; }
+    [Parameter] public bool TimePicker { get; set; } = false;
+    private DateTime _value;
+    [Parameter]
+    public DateTime Value
     {
-        get => SelectedDate;
+        get => _value;
         set
         {
-            SelectedDate = value;
-            SelectedDateChanged.InvokeAsync(value);
+            if (_value != value)
+            {
+                _value = value;
+                ValueChanged.InvokeAsync(value);
+            }
+        }
+    }
+    private string _text;
+    public string Text{
+        get => _text;
+        set  {
+            if (_text != value)
+            {
+                _text = Value.ToString(GlobalConstants.DefaultDateTimeFormat);
+            }
         }
     }
     private DotNetObjectReference<DateInput> _objectReference;
+    protected override void OnParametersSet()
+    {
+        Text = Value.ToString(GlobalConstants.DefaultDateTimeFormat);
+        base.OnParametersSet();
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -34,9 +56,18 @@
     }
 
     [JSInvokable]
-    public Task UpdateDate(string date)
+    public async Task UpdateDate(string date)
     {
-        SelectedDateString = date.ToString();
-        return SelectedDateChanged.InvokeAsync(SelectedDate);
+        if (DateTime.TryParseExact(date, GlobalConstants.DefaultDateTimeFormat,
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt))
+        {
+            Value = dt;
+            Text = Value.ToString(GlobalConstants.DefaultDateTimeFormat);
+            await ValueChanged.InvokeAsync(Value);
+        }
+        else
+        {
+            _toastService.ShowError("Please enter a proper date!");
+        }
     }
 }

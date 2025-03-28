@@ -10,9 +10,13 @@
 	<PropertyGroup Condition=" '$(RunConfiguration)' == 'SMSDOME-Standard-Contest-BlazorServer' " />
 
 	<ItemGroup>
+	  <Compile Remove="Extension\**" />
 	  <Compile Remove="Helper\**" />
+	  <Content Remove="Extension\**" />
 	  <Content Remove="Helper\**" />
+	  <EmbeddedResource Remove="Extension\**" />
 	  <EmbeddedResource Remove="Helper\**" />
+	  <None Remove="Extension\**" />
 	  <None Remove="Helper\**" />
 	</ItemGroup>
 	
@@ -35,10 +39,6 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Models\Entities.csproj" />
 	  <ProjectReference Include="..\Service\Services.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Extension\" />
 	</ItemGroup>
 
 </Project>

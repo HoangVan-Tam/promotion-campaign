@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SMSDOME_Standard_Contest_BlazorServer.Helpers
+namespace Services.Helpers
 {
     public partial class CustomClassBuilder
     {

@@ -53,6 +53,7 @@ namespace DAL.Implement
         /// <param name="transaction">The database transaction to ensure atomicity.</param>
         /// <returns>An asynchronous task representing the operation.</returns>
         public async Task InsertEntriesAsync(
+            string tableName,
             Contest contest,
             Dictionary<string, object> props,
             IEnumerable<ColumnMetadata> tableColumns,
@@ -63,9 +64,6 @@ namespace DAL.Implement
 
             // Add the verification code to the properties dictionary
             props.Add("VerificationCode", verificationCode);
-
-            // Define the target table name dynamically based on the contest unique code
-            var tableName = "BC_" + contest.ContestUniqueCode;
 
             // Construct the base SQL INSERT query
             string queryString = "INSERT INTO " + tableName + " (columns) VALUES (values)";
@@ -114,7 +112,11 @@ namespace DAL.Implement
             }
         }
 
-        public async Task CreateContestTableAsync(string tableName, List<FieldsForNewContest> columns, GlobalConstants.TYPETABLE type, IDbContextTransaction transaction)
+        public async Task CreateContestTableAsync(
+            string tableName, 
+            List<FieldsForNewContest> columns, 
+            GlobalConstants.TYPETABLE type, 
+            IDbContextTransaction transaction)
         {
             string queryString = "";
             switch (type)
@@ -252,7 +254,8 @@ namespace DAL.Implement
 
             int skipRow = option.PageSize * (option.PageNumber - 1);
             string queryString = GlobalConstants.DBSCRIPT_GET_ALL_ENTRIES
-                .Replace("230101_KEYWORD", tableName);
+                .Replace("BC_230101_KEYWORD", tableName);
+            
 
             List<Dictionary<string, object>> dictionaries = new();
 
@@ -267,11 +270,26 @@ namespace DAL.Implement
                 {
                     command.Transaction = transaction.GetDbTransaction();
                 }
-                command.CommandText = queryString;
+
                 var paramSkip = new SqlParameter("@SkipRow", SqlDbType.Int) { Value = skipRow };
                 command.Parameters.Add(paramSkip);
                 var paramTake = new SqlParameter("@TakeRow", SqlDbType.Int) { Value = option.PageSize };
                 command.Parameters.Add(paramTake);
+                var paramStartDate = new SqlParameter("@StartDate", SqlDbType.DateTime2) { Value = option.StartDate };
+                command.Parameters.Add(paramStartDate);
+                var paramEndDate = new SqlParameter("@EndDate", SqlDbType.DateTime2) { Value = option.EndDate };
+                command.Parameters.Add(paramEndDate);
+                if (!string.IsNullOrEmpty(option.EntryValidity))
+                {
+                    var paramIsValid = new SqlParameter("@IsValid", SqlDbType.Bit) { Value = option.EntryValidity == "1" ? true : false};
+                    command.Parameters.Add(paramIsValid);
+                    queryString = queryString.Replace("@IsValid", "and IsValid = @IsValid");
+                }
+                else
+                {
+                    queryString = queryString.Replace("@IsValid", "");
+                }
+                command.CommandText = queryString;
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
@@ -292,9 +310,10 @@ namespace DAL.Implement
             return dictionaries;
         }
 
-
-        public async Task<List<Dictionary<string, object>>> GetAllEntries(string tableName, List<string> entryExclusionFields,
-     IDbContextTransaction transaction)
+        public async Task<List<Dictionary<string, object>>> GetAllEntries(
+            string tableName, 
+            List<string> entryExclusionFields,
+            IDbContextTransaction transaction)
         {
             if (string.IsNullOrWhiteSpace(tableName))
                 throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
@@ -356,7 +375,11 @@ namespace DAL.Implement
             //await cmd.ExecuteNonQueryAsync();
         }
 
-        public async Task<List<Dictionary<string, object>>> FindEntriesAsync(string tableName, Dictionary<string, object> props, List<ColumnMetadata> tableColumns, IDbContextTransaction transaction)
+        public async Task<List<Dictionary<string, object>>> FindDataAsync(
+            string tableName, 
+            Dictionary<string, object> props, 
+            List<ColumnMetadata> tableColumns, 
+            IDbContextTransaction transaction)
         {
             var dictionaries = new List<Dictionary<string, object>>();
             var conditionCmds = new List<string>();
@@ -406,7 +429,7 @@ namespace DAL.Implement
         }
 
         public async Task<List<ColumnMetadata>> GetTableColumnsAsync(
-             string contestUniqueCode,
+             string tableName,
              IDbContextTransaction transaction)
         {
             var columns = new List<ColumnMetadata>();
@@ -419,7 +442,7 @@ namespace DAL.Implement
             command.Transaction = transaction.GetDbTransaction(); // Liên kết transaction
             command.CommandText = query;
 
-            var param = new SqlParameter("@TableName", DbType.String) { Value = "BC_" + contestUniqueCode };
+            var param = new SqlParameter("@TableName", DbType.String) { Value = tableName };
             command.Parameters.Add(param);
 
             await using var reader = await command.ExecuteReaderAsync();
@@ -434,7 +457,6 @@ namespace DAL.Implement
 
             return columns;
         }
-
 
         public async Task UpdateEntriesAsync(
             string tableName,
@@ -473,6 +495,161 @@ namespace DAL.Implement
             sqlParams.Add(new SqlParameter("@VerificationCode", SqlDbType.NVarChar) { Value = verificationCode });
 
             await _context.Database.ExecuteSqlRawAsync(updateQuery, sqlParams);
+        }
+
+        public async Task<List<Dictionary<string, object>>> PickWinners(
+            string tableName, 
+            PickWinnerModel option, 
+            IDbContextTransaction transaction)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
+
+            string queryString = GlobalConstants.DBSCRIPT_PICK_WINNERS;
+            if (option.ExcludePastWinnerMobile)
+            {
+                queryString = queryString + GlobalConstants.DBSCRIPT_PICK_WINNER_CONDITIONS_EXCLUDE_PAST_WINNERS;
+            }
+            if (option.WithReceiptUploaded)
+            {
+                queryString = queryString + GlobalConstants.DBSCRIPT_PICK_WINNER_CONDITIONS_REQUIRED_FILELINK;
+            }
+            List<Dictionary<string, object>> dictionaries = new();
+
+            var connection = _context.Database.GetDbConnection();
+            if (connection.State == System.Data.ConnectionState.Closed)
+            {
+                await connection.OpenAsync();
+            }
+            using (var command = connection.CreateCommand())
+            {
+                if (transaction != null)
+                {
+                    command.Transaction = transaction.GetDbTransaction();
+                }
+
+                command.CommandText = queryString.Replace("BC_230101_KEYWORD", tableName); ;
+                
+                var paramStartDate = new SqlParameter("@StartDate", SqlDbType.DateTime2) { Value = option.StartDate };
+                command.Parameters.Add(paramStartDate);
+                var paramEndDate = new SqlParameter("@EndDate", SqlDbType.DateTime2) { Value = option.EndDate };
+                command.Parameters.Add(paramEndDate);
+                var paramNoOfWinner = new SqlParameter("@NoOfWinners", SqlDbType.Int) { Value = option.NumberOfWinnersToPick };
+                command.Parameters.Add(paramNoOfWinner);
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var keyValuePair = new Dictionary<string, object>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            keyValuePair[reader.GetName(i)] = reader.GetValue(i);
+                        }
+                        dictionaries.Add(keyValuePair);
+                    }
+                }
+            }
+            return dictionaries;
+        }
+
+        public async Task InsertWinnersAsync(string tableName, Dictionary<string, object> props, List<ColumnMetadata> tableColumns, IDbContextTransaction transaction)
+        {
+            string queryString = "INSERT INTO " + tableName + " (columns) VALUES (values)";
+            queryString = queryString.Replace("columns", string.Join(",", tableColumns.Select(p => p.ColumnName)));
+            queryString = queryString.Replace("values", string.Join(",", tableColumns.Select(p => "@" + p.ColumnName)));
+            var tableColumnNames = tableColumns.Select(p => p.ColumnName);
+            var sqlParams = tableColumns.Select(p =>
+            {
+                var sqlDbType = SqlTypeHelper.GetSqlDbType(p.DataType ?? "nvarchar");
+                var value = SqlTypeHelper.GetDefaultValue(sqlDbType);
+                if (props.ContainsKey(p.ColumnName))
+                {
+                    value = props[p.ColumnName] ?? value;
+                }
+
+                return new SqlParameter("@" + p.ColumnName, sqlDbType) { Value = value };
+            }).ToArray();
+            var connection = _context.Database.GetDbConnection();
+            if (connection.State == ConnectionState.Closed)
+            {
+                await connection.OpenAsync();
+            }
+            using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction.GetDbTransaction(); // Link the transaction
+                command.CommandText = queryString;
+                command.Parameters.AddRange(sqlParams);
+
+                await command.ExecuteNonQueryAsync(); // Execute the INSERT query
+            }
+        }
+
+        public async Task<List<Dictionary<string, object>>> GetAllWinners(
+           string tableName,
+           Option option,
+           List<string> entryExclusionFields,
+           IDbContextTransaction transaction)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
+
+            int skipRow = option.PageSize * (option.PageNumber - 1);
+            string queryString = GlobalConstants.DBSCRIPT_GET_ALL_ENTRIES
+                .Replace("BC_230101_KEYWORD", tableName);
+
+
+            List<Dictionary<string, object>> dictionaries = new();
+
+            var connection = _context.Database.GetDbConnection();
+            if (connection.State == System.Data.ConnectionState.Closed)
+            {
+                await connection.OpenAsync();
+            }
+            using (var command = connection.CreateCommand())
+            {
+                if (transaction != null)
+                {
+                    command.Transaction = transaction.GetDbTransaction();
+                }
+
+                var paramSkip = new SqlParameter("@SkipRow", SqlDbType.Int) { Value = skipRow };
+                command.Parameters.Add(paramSkip);
+                var paramTake = new SqlParameter("@TakeRow", SqlDbType.Int) { Value = option.PageSize };
+                command.Parameters.Add(paramTake);
+                var paramStartDate = new SqlParameter("@StartDate", SqlDbType.DateTime2) { Value = option.StartDate };
+                command.Parameters.Add(paramStartDate);
+                var paramEndDate = new SqlParameter("@EndDate", SqlDbType.DateTime2) { Value = option.EndDate };
+                command.Parameters.Add(paramEndDate);
+                if (!string.IsNullOrEmpty(option.EntryValidity))
+                {
+                    var paramIsValid = new SqlParameter("@IsValid", SqlDbType.Bit) { Value = option.EntryValidity == "1" ? true : false };
+                    command.Parameters.Add(paramIsValid);
+                    queryString = queryString.Replace("@IsValid", "and IsValid = @IsValid");
+                }
+                else
+                {
+                    queryString = queryString.Replace("@IsValid", "");
+                }
+                command.CommandText = queryString;
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var keyValuePair = new Dictionary<string, object>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            string columnName = reader.GetName(i);
+                            if (!entryExclusionFields.Contains(columnName))
+                            {
+                                keyValuePair[columnName] = reader.GetValue(i);
+                            }
+                        }
+                        dictionaries.Add(keyValuePair);
+                    }
+                }
+            }
+            return dictionaries;
         }
 
     }

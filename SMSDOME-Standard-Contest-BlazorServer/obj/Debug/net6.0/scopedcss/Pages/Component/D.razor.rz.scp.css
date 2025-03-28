@@ -1,23 +1,23 @@
-.select-btn[b-354kcu6eft], li[b-354kcu6eft] {
+.select-btn[b-l7y77e0xe9], li[b-l7y77e0xe9] {
     display: flex;
     align-items: center;
     cursor: pointer;
 }
 
-.select-btn[b-354kcu6eft] {
+.select-btn[b-l7y77e0xe9] {
     display: flex;
     justify-content: space-between;
 }
 
-    .select-btn i[b-354kcu6eft] {
+    .select-btn i[b-l7y77e0xe9] {
         transition: transform 0.3s linear;
     }
 
-.wrapper.active .select-btn i[b-354kcu6eft] {
+.wrapper.active .select-btn i[b-l7y77e0xe9] {
     transform: rotate(-180deg);
 }
 
-.content-dropdownlist[b-354kcu6eft] {
+.content-dropdownlist[b-l7y77e0xe9] {
     padding: 5px 10px 5px;
     margin-top: 10px;
     background: #fff;
@@ -26,15 +26,15 @@
     border: 1px solid gainsboro;
 }
 
-.wrapper.active .content[b-354kcu6eft] {
+.wrapper.active .content[b-l7y77e0xe9] {
     display: block;
 }
 
-.content .search[b-354kcu6eft] {
+.content .search[b-l7y77e0xe9] {
     position: relative;
 }
 
-.search i[b-354kcu6eft] {
+.search i[b-l7y77e0xe9] {
     top: 50%;
     left: 15px;
     color: #999;
@@ -43,48 +43,48 @@
     position: absolute;
 }
 
-.search input[b-354kcu6eft] {
+.search input[b-l7y77e0xe9] {
     padding: 0 20px 0 43px;
     height: 40px;
 }
 
-.content .options[b-354kcu6eft] {
+.content .options[b-l7y77e0xe9] {
     margin-bottom: 0px;
     max-height: 250px;
     overflow-y: auto;
     padding: 0;
 }
 
-.options[b-354kcu6eft]::-webkit-scrollbar {
+.options[b-l7y77e0xe9]::-webkit-scrollbar {
     width: 7px;
 }
 
-.options[b-354kcu6eft]::-webkit-scrollbar-track {
+.options[b-l7y77e0xe9]::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 25px;
 }
 
-.options[b-354kcu6eft]::-webkit-scrollbar-thumb {
+.options[b-l7y77e0xe9]::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 25px;
 }
 
-    .options[b-354kcu6eft]::-webkit-scrollbar-thumb:hover {
+    .options[b-l7y77e0xe9]::-webkit-scrollbar-thumb:hover {
         background: #b3b3b3;
     }
 
-.options li[b-354kcu6eft] {
+.options li[b-l7y77e0xe9] {
     height: 50px;
     padding: 0 13px;
 }
 
-    .options li:hover[b-354kcu6eft], li.selected[b-354kcu6eft] {
+    .options li:hover[b-l7y77e0xe9], li.selected[b-l7y77e0xe9] {
         border-radius: 5px;
         background: #f1f1f1;
         border: 1px solid gainsboro;
     }
 
-.selected-item[b-354kcu6eft] {
+.selected-item[b-l7y77e0xe9] {
     display: inline-block;
     padding: .35em .65em;
     font-size: 1rem;
@@ -97,7 +97,7 @@
     border-radius: .25rem;
 }
 
-.selected-item-text[b-354kcu6eft] {
+.selected-item-text[b-l7y77e0xe9] {
     display: inline-block;
     font-weight: 400;
     line-height: 1.5;
